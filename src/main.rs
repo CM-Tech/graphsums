@@ -3,8 +3,17 @@ extern crate piston_window;
 
 use piston_window::*;
 
+fn sorted(x: (usize, usize)) -> (usize, usize) {
+    if x.0 > x.1 {
+        (x.1, x.0)
+    } else {
+        x
+    }
+}
+
 fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
-    lines.dedup_by(|x, y| x.0 == x.1 || x == y || (x.0 == y.1 && x.1 == y.0));
+    lines.sort();
+    lines.dedup_by(|x, y| x.0 == x.1 || x == y);
     let mut total = [0; 3];
     let mut c = vec![0; points.len()];
     loop {
@@ -48,7 +57,7 @@ fn main() {
     let mut glyphs = Glyphs::new(font, window.factory.clone(), TextureSettings::new()).unwrap();
 
     let mut points: Vec<(f64, f64)> = vec![];
-    let mut lines: Vec<(usize, usize)> = vec![];
+    let mut edges: Vec<(usize, usize)> = vec![];
     let mut cursor = [0.0; 2];
     let mut click: Option<usize> = None;
     let mut total = [0; 3];
@@ -62,17 +71,17 @@ fn main() {
                         && (cursor[1] > p.1 - 10.0)
                 }) {
                     if let Some(x) = click {
-                        lines.push((x, p));
+                        edges.push(sorted((x, p)));
                         click = None;
                     } else {
                         if deleting {
                             points.remove(p);
-                            lines.retain(|z| z.0 != p && z.1 != p);
-                            for z in lines.iter_mut() {
-                                if z.0 > p {
+                            edges.retain(|z| z.0 != p && z.1 != p);
+                            for z in edges.iter_mut() {
+                                if z.0 >= p {
                                     z.0 = z.0 - 1;
                                 }
-                                if z.1 > p {
+                                if z.1 >= p {
                                     z.1 = z.1 - 1;
                                 }
                             }
@@ -85,21 +94,21 @@ fn main() {
                         points.push((cursor[0], cursor[1]));
                     }
                     if let Some(x) = click {
-                        lines.push((x, points.len() - 1));
+                        edges.push(sorted((x, points.len() - 1)));
                         click = None;
                     }
                 }
-                total = calc(&mut lines, &points);
+                total = calc(&mut edges, &points);
             }
             Some(Button::Keyboard(Key::LShift)) => {
                 deleting = true;
                 click = None;
             }
             Some(Button::Keyboard(Key::C)) => {
-                lines.clear();
+                edges.clear();
                 points.clear();
                 click = None;
-                total = calc(&mut lines, &points);
+                total = calc(&mut edges, &points);
             }
             _ => (),
         }
@@ -118,7 +127,7 @@ fn main() {
                     g,
                 );
             }
-            for &(x, y) in lines.iter() {
+            for &(x, y) in edges.iter() {
                 line(
                     [1.0; 4],
                     1.0,
@@ -144,13 +153,28 @@ fn main() {
                 20,
                 &format!("{} + {}ω + {}ω̄", total[0], total[1], total[2]),
                 &mut glyphs,
+                c.transform.trans(size / 2.0 - 70.0, 45.0),
+                g,
+            ).unwrap();
+            text(
+                [1.0; 4],
+                20,
+                &format!(
+                    "Magnitude: {}",
+                    ((total[0] as f64 - (0.5) * (total[1] as f64) - (0.5) * (total[2] as f64))
+                        .powf(2.0) + 
+                    (((3f64).sqrt() / 2.0) * (total[1] as f64) - ((3f64).sqrt() / 2.0) * (total[2] as f64))
+                        .powf(2.0))
+                    .round()
+                ),
+                &mut glyphs,
                 c.transform.trans(size / 2.0 - 70.0, 70.0),
                 g,
             ).unwrap();
             text(
                 [1.0; 4],
                 20,
-                &format!("Lines: {}", lines.len()),
+                &format!("Edges: {}", edges.len()),
                 &mut glyphs,
                 c.transform.trans(size / 2.0 - 50.0, 95.0),
                 g,
