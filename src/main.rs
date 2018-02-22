@@ -120,7 +120,6 @@ fn main() {
                 mode = 2;
                 click = None;
             }
-            Some(Button::Keyboard(Key::M)) => mode = 1,
             Some(Button::Keyboard(Key::K)) => {
                 edges.clear();
                 for i in 0..points.len() {
@@ -139,7 +138,7 @@ fn main() {
             _ => (),
         }
         match e.release_args() {
-            Some(Button::Keyboard(Key::LShift)) | Some(Button::Keyboard(Key::M)) => {
+            Some(Button::Keyboard(Key::LShift)) => {
                 mode = 0;
                 click = None;
             }
