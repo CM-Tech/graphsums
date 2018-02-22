@@ -105,13 +105,12 @@ fn main() {
                 } else {
                     if mode < 2 {
                         points.push(cursor);
-                        if click.is_none() {
+                        if let Some(x) = click {
+                            edges.push(sorted((x, points.len() - 1)));
+                            click = Some(points.len() - 1);
+                        } else {
                             click = Some(points.len() - 1);
                         }
-                    }
-                    if let Some(x) = click {
-                        edges.push(sorted((x, points.len() - 1)));
-                        click = Some(points.len() - 1);
                     }
                     total = calc(&mut edges, &points);
                 }
