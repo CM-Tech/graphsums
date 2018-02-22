@@ -5,4 +5,3 @@ authors = ["modderme123 <hidden>"]
 
 [dependencies]
 piston_window = "0.75.0"
-find_folder = "0.3.0"

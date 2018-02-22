@@ -1,4 +1,3 @@
-extern crate find_folder;
 extern crate piston_window;
 
 use piston_window::*;
@@ -11,18 +10,18 @@ fn sorted(x: (usize, usize)) -> (usize, usize) {
     }
 }
 
-fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
-    lines.sort();
-    lines.dedup_by(|x, y| x.0 == x.1 || x == y);
+fn calc(edges: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
+    edges.sort();
+    edges.dedup_by(|x, y| x.0 == x.1 || x == y);
     let mut total = [0; 3];
     let mut c = vec![0; points.len()];
     loop {
         let mut sum = 0;
-        for i in lines.iter() {
+        for i in edges.iter() {
             sum += c[i.0] * c[i.1];
         }
         total[sum % 3] += 1;
-        /*for i in lines.iter() {
+        /*for i in edges.iter() {
             total[(c[i.0] * c[i.1]) % 3] += 1;
         }*/
 
@@ -46,35 +45,48 @@ fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
     }
     total
 }
+
 fn main() {
     let mut window: PistonWindow = WindowSettings::new("Graph Sums!", [500; 2])
         .build()
         .unwrap();
-    let font = find_folder::Search::ParentsThenKids(3, 3)
-        .for_folder("assets")
-        .unwrap()
-        .join("FiraCode.ttf");
-    let mut glyphs = Glyphs::new(font, window.factory.clone(), TextureSettings::new()).unwrap();
+
+    let font = include_bytes!("../assets/FiraCode.ttf");
+    let mut glyphs =
+        Glyphs::from_bytes(font, window.factory.clone(), TextureSettings::new()).unwrap();
 
     let mut points: Vec<(f64, f64)> = vec![];
     let mut edges: Vec<(usize, usize)> = vec![];
-    let mut cursor = [0.0; 2];
+    let mut cursor = (0.0, 0.0);
     let mut click: Option<usize> = None;
     let mut total = [0; 3];
-    let mut deleting = false;
+    let mut mode = 0;
     while let Some(e) = window.next() {
-        e.mouse_cursor(|x, y| cursor = [x, y]);
+        e.mouse_cursor(|x, y| {
+            if mode == 1 {
+                if let Some(x) = click {
+                    points[x] = cursor;
+                }
+            }
+            cursor = (x, y)
+        });
         match e.press_args() {
             Some(Button::Mouse(_)) => {
+                if mode == 0 {
+                    mode = 1
+                }
                 if let Some(p) = points.iter().position(|p| {
-                    (cursor[0] < p.0 + 10.0) && (cursor[0] > p.0 - 10.0) && (cursor[1] < p.1 + 10.0)
-                        && (cursor[1] > p.1 - 10.0)
+                    (cursor.0 < p.0 + 10.0) && (cursor.0 > p.0 - 10.0) && (cursor.1 < p.1 + 10.0)
+                        && (cursor.1 > p.1 - 10.0)
                 }) {
                     if let Some(x) = click {
-                        edges.push(sorted((x, p)));
-                        click = None;
+                        if p != x {
+                            edges.push(sorted((x, p)));
+                            total = calc(&mut edges, &points);
+                            click = Some(p);
+                        }
                     } else {
-                        if deleting {
+                        if mode > 1 {
                             points.remove(p);
                             edges.retain(|z| z.0 != p && z.1 != p);
                             for z in edges.iter_mut() {
@@ -85,24 +97,38 @@ fn main() {
                                     z.1 = z.1 - 1;
                                 }
                             }
+                            total = calc(&mut edges, &points);
                         } else {
                             click = Some(p);
                         }
                     }
                 } else {
-                    if !deleting {
-                        points.push((cursor[0], cursor[1]));
+                    if mode < 2 {
+                        points.push(cursor);
+                        if click.is_none() {
+                            click = Some(points.len() - 1);
+                        }
                     }
                     if let Some(x) = click {
                         edges.push(sorted((x, points.len() - 1)));
-                        click = None;
+                        click = Some(points.len() - 1);
+                    }
+                    total = calc(&mut edges, &points);
+                }
+            }
+            Some(Button::Keyboard(Key::LShift)) => {
+                mode = 2;
+                click = None;
+            }
+            Some(Button::Keyboard(Key::M)) => mode = 1,
+            Some(Button::Keyboard(Key::K)) => {
+                edges.clear();
+                for i in 0..points.len() {
+                    for j in i + 1..points.len() {
+                        edges.push(sorted((i, j)));
                     }
                 }
                 total = calc(&mut edges, &points);
-            }
-            Some(Button::Keyboard(Key::LShift)) => {
-                deleting = true;
-                click = None;
             }
             Some(Button::Keyboard(Key::C)) => {
                 edges.clear();
@@ -112,21 +138,39 @@ fn main() {
             }
             _ => (),
         }
-        if let Some(Button::Keyboard(Key::LShift)) = e.release_args() {
-            deleting = false;
+        match e.release_args() {
+            Some(Button::Keyboard(Key::LShift)) | Some(Button::Keyboard(Key::M)) => {
+                mode = 0;
+                click = None;
+            }
+            Some(Button::Mouse(_)) => mode = 0,
+            _ => (),
         }
-        let size = window.size().width as f64;
         window.draw_2d(&e, |c, g| {
             clear([0.0, 0.0, 0.0, 1.0], g);
             if let Some(x) = click {
-                line(
-                    [1.0; 4],
-                    1.0,
-                    [points[x].0, points[x].1, cursor[0], cursor[1]],
-                    c.transform,
-                    g,
-                );
+                if let Some(p) = points.iter().position(|p| {
+                    (cursor.0 < p.0 + 10.0) && (cursor.0 > p.0 - 10.0) && (cursor.1 < p.1 + 10.0)
+                        && (cursor.1 > p.1 - 10.0)
+                }) {
+                    line(
+                        [0.5, 0.5, 0.5, 1.0],
+                        1.0,
+                        [points[x].0, points[x].1, points[p].0, points[p].1],
+                        c.transform,
+                        g,
+                    );
+                } else {
+                    line(
+                        [0.5, 0.5, 0.5, 1.0],
+                        1.0,
+                        [points[x].0, points[x].1, cursor.0, cursor.1],
+                        c.transform,
+                        g,
+                    );
+                }
             }
+
             for &(x, y) in edges.iter() {
                 line(
                     [1.0; 4],
@@ -151,24 +195,20 @@ fn main() {
             text(
                 [1.0; 4],
                 20,
-                &format!("{} + {}ω + {}ω̄", total[0], total[1], total[2]),
-                &mut glyphs,
-                c.transform.trans(size / 2.0 - 70.0, 45.0),
-                g,
-            ).unwrap();
-            text(
-                [1.0; 4],
-                20,
                 &format!(
-                    "Magnitude: {}",
+                    "|{} + {}ω + {}ω̄| = √{}",
+                    total[0],
+                    total[1],
+                    total[2],
                     ((total[0] as f64 - (0.5) * (total[1] as f64) - (0.5) * (total[2] as f64))
-                        .powf(2.0) + 
-                    (((3f64).sqrt() / 2.0) * (total[1] as f64) - ((3f64).sqrt() / 2.0) * (total[2] as f64))
-                        .powf(2.0))
-                    .round()
+                        .powf(2.0)
+                        + (((3f64).sqrt() / 2.0) * (total[1] as f64)
+                            - ((3f64).sqrt() / 2.0) * (total[2] as f64))
+                            .powf(2.0))
+                        .round()
                 ),
                 &mut glyphs,
-                c.transform.trans(size / 2.0 - 70.0, 70.0),
+                c.transform.trans(10.0, 25.0),
                 g,
             ).unwrap();
             text(
@@ -176,7 +216,7 @@ fn main() {
                 20,
                 &format!("Edges: {}", edges.len()),
                 &mut glyphs,
-                c.transform.trans(size / 2.0 - 50.0, 95.0),
+                c.transform.trans(10.0, 50.0),
                 g,
             ).unwrap();
             text(
@@ -184,7 +224,7 @@ fn main() {
                 20,
                 &format!("Vertices: {}", points.len()),
                 &mut glyphs,
-                c.transform.trans(size / 2.0 - 70.0, 120.0),
+                c.transform.trans(10.0, 75.0),
                 g,
             ).unwrap();
         });

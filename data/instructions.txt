@@ -1,0 +1,7 @@
+K: Connect all points
+
+Hold M: Move selected point
+
+Click+shift: Delete selected point
+
+C: Clear graph
