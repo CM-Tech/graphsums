@@ -10,35 +10,105 @@ fn sorted(x: (usize, usize)) -> (usize, usize) {
     }
 }
 
-fn calc(edges: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
-    edges.sort();
-    edges.dedup_by(|x, y| x.0 == x.1 || x == y);
+fn calcDelt(graph:& Vec<Vec<usize>>,oldP:&Vec<i32>,old:&i32,change:(usize,i32),oldV:i32)-> i32{
+    let mut totNeb=0;
+    for i in graph[change.0].iter(){
+        totNeb+=oldP[i+0];
+
+    }
+    return (((change.1-oldV)*totNeb) )%3+old;
+}
+/*
+fn next(loc:&mut Vec<i32>)->(usize,i32){
+
+}*/
+fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
+    lines.sort();
+    lines.dedup_by(|x, y| x.0 == x.1 || x == y);
+
     let mut total = [0; 3];
     let mut c = vec![0; points.len()];
-    loop {
-        let mut sum = 0;
-        for i in edges.iter() {
-            sum += c[i.0] * c[i.1];
-        }
-        total[sum % 3] += 1;
-        /*for i in edges.iter() {
-            total[(c[i.0] * c[i.1]) % 3] += 1;
-        }*/
+    let mut graph: Vec<Vec<usize>>=vec![vec![]; points.len()];
+    for i in lines.iter() {
+        graph[i.0].push(i.1);
+        graph[i.1].push(i.0);
+    }
 
-        if c == vec![2; points.len()] {
+    let mut change=(0usize,0);
+    let mut oldV=0;
+let mut it=1;
+    let mut sum:i32 = 0;
+    for i in lines.iter() {
+        sum += c[i.0] * c[i.1];
+    }
+
+    total[(sum % 3) as usize] += 1;
+    loop {
+    //    println!("OUTT:{:?}", c);
+        //println!("NEXT");
+
+
+
+
+        let mut add_next = 1;
+        change=(0usize,0);
+        oldV=0;
+        for i in 0..c.len(){
+            let mut j=i+1;
+            let mut mode=true;
+            if(j<c.len()){
+                let mut t=0;
+                for h in j..c.len(){
+                    t=t+c[h];
+                }
+                if(t%2==1){
+                    mode=false;
+                }
+            }
+            if(add_next>0){
+                add_next=0;
+
+                if(mode){
+                    if(c[i]==2){
+                        add_next=1;
+                    }else{
+                        oldV=c[i]+0;
+                        change=(i,c[i]+1);
+                    c[i]=c[i]+1;
+                    break;
+
+                    //println!("CHANGE");
+                }
+
+                }else{
+
+                    if(c[i]==0){
+                        add_next=1;
+                    }else{
+
+                        oldV=c[i]+0;
+                        change=(i,c[i]-1);
+                        c[i]=c[i]-1;
+                        break;
+                        //println!("CHANGE");
+                    }
+                }
+            }
+
+        }
+
+        if(add_next==1){
+        //    println!("OUT:{:?}", c);
             break;
         }
 
-        let mut add_next = 1;
-        for n in c.iter_mut().rev() {
-            *n += add_next;
-            add_next = 0;
-            if *n == 3 {
-                *n = 0;
-                add_next = 1;
-            }
-        }
+        it+=1;
+        sum = calcDelt(&graph,&c,&sum,change,oldV);
+
+        total[(sum % 3) as usize] += 1;
+
     }
+    println!("IT:{:?}", it);
     let min = total.iter().min().unwrap().clone();
     for x in total.iter_mut() {
         *x -= min
