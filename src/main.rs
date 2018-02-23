@@ -10,7 +10,7 @@ fn sorted(x: (usize, usize)) -> (usize, usize) {
     }
 }
 
-fn calcDelt(graph:& Vec<Vec<usize>>,oldP:&Vec<i32>,old:&i32,change:(usize,i32),oldV:i32)-> i32{
+fn calc_delt(graph:& Vec<Vec<usize>>,oldP:&Vec<i32>,old:&i32,change:(usize,i32),oldV:i32)-> i32{
     let mut totNeb=0;
     for i in graph[change.0].iter(){
         totNeb+=oldP[i+0];
@@ -52,25 +52,12 @@ let mut it=1;
 
 
         let mut add_next = 1;
-        change=(0usize,0);
+        //change=(0usize,0);
         oldV=0;
         for i in 0..c.len(){
-            let mut j=i+1;
-            let mut mode=true;
-            /*if(j<c.len()){
-                let mut t=0;
-                for h in j..c.len(){
-                    t=t+c[h];
-                }
-                if(t%2==1){
-                    mode=false;
-                }
-            }*/
-            mode=d[i];
-            if(add_next>0){
                 add_next=0;
 
-                if(mode){
+                if(d[i]){
                     if(c[i]==2){
                         add_next=1;
 
@@ -103,7 +90,7 @@ let mut it=1;
                 }
             }
 
-        }
+
 
         if(add_next==1){
         //    println!("OUT:{:?}", c);
@@ -111,7 +98,7 @@ let mut it=1;
         }
 
         it+=1;
-        sum = (calcDelt(&graph,&c,&sum,change,oldV)%3+3)%3;
+        sum = (calc_delt(&graph,&c,&sum,change,oldV)%3+3)%3;
 
         total[(sum % 3) as usize] += 1;
 
