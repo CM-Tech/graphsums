@@ -38,7 +38,6 @@ fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
     }
 
     let mut change = (0usize, 0);
-    let mut it = 1;
     let mut sum: i32 = 0;
     for i in lines.iter() {
         sum += c[i.0] * c[i.1];
@@ -81,12 +80,11 @@ fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
             break;
         }
 
-        it += 1;
         sum = (calc_delt(&graph, &c, &sum, change, old_v) % 3 + 3) % 3;
 
         total[(sum % 3) as usize] += 1;
     }
-    println!("IT:{:?}", it);
+
     let min = total.iter().min().unwrap().clone();
     for x in total.iter_mut() {
         *x -= min
