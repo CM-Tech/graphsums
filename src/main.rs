@@ -28,6 +28,7 @@ fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
 
     let mut total = [0; 3];
     let mut c = vec![0; points.len()];
+    let mut d = vec![true; points.len()];
     let mut graph: Vec<Vec<usize>>=vec![vec![]; points.len()];
     for i in lines.iter() {
         graph[i.0].push(i.1);
@@ -41,10 +42,10 @@ let mut it=1;
     for i in lines.iter() {
         sum += c[i.0] * c[i.1];
     }
-
+    sum=(sum%3+3)%3;
     total[(sum % 3) as usize] += 1;
     loop {
-    //    println!("OUTT:{:?}", c);
+        //println!("OUTT:{:?}", c);
         //println!("NEXT");
 
 
@@ -56,7 +57,7 @@ let mut it=1;
         for i in 0..c.len(){
             let mut j=i+1;
             let mut mode=true;
-            if(j<c.len()){
+            /*if(j<c.len()){
                 let mut t=0;
                 for h in j..c.len(){
                     t=t+c[h];
@@ -64,17 +65,22 @@ let mut it=1;
                 if(t%2==1){
                     mode=false;
                 }
-            }
+            }*/
+            mode=d[i];
             if(add_next>0){
                 add_next=0;
 
                 if(mode){
                     if(c[i]==2){
                         add_next=1;
+
+                            d[i]=false;
+
                     }else{
                         oldV=c[i]+0;
                         change=(i,c[i]+1);
                     c[i]=c[i]+1;
+
                     break;
 
                     //println!("CHANGE");
@@ -84,11 +90,13 @@ let mut it=1;
 
                     if(c[i]==0){
                         add_next=1;
+                        d[i]=true;
                     }else{
 
                         oldV=c[i]+0;
                         change=(i,c[i]-1);
                         c[i]=c[i]-1;
+
                         break;
                         //println!("CHANGE");
                     }
@@ -103,7 +111,7 @@ let mut it=1;
         }
 
         it+=1;
-        sum = calcDelt(&graph,&c,&sum,change,oldV);
+        sum = (calcDelt(&graph,&c,&sum,change,oldV)%3+3)%3;
 
         total[(sum % 3) as usize] += 1;
 
