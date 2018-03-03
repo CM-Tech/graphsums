@@ -43,7 +43,7 @@ fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
         sum += c[i.0] * c[i.1];
     }
     sum = (sum % 3 + 3) % 3;
-    total[(sum % 3) as usize] += 1;
+    total[sum as usize] += 1;
     loop {
         let mut add_next = 1;
         let mut old_v = 0;
@@ -82,7 +82,7 @@ fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
 
         sum = (calc_delt(&graph, &c, &sum, change, old_v) % 3 + 3) % 3;
 
-        total[(sum % 3) as usize] += 1;
+        total[sum as usize] += 1;
     }
 
     let min = total.iter().min().unwrap().clone();
@@ -187,7 +187,7 @@ fn main() {
                 mode = 0;
                 click = None;
             }
-            Some(Button::Mouse(_)) => mode = 0,
+            Some(Button::Mouse(_)) if mode < 2 => mode = 0,
             _ => (),
         }
         window.draw_2d(&e, |c, g| {
