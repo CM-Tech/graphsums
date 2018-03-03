@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["modderme123 <hidden>"]
 
 [dependencies]
-piston_window = "0.75.0"
+piston_window = "0.77.0"
