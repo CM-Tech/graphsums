@@ -11,20 +11,20 @@ fn sorted(x: (usize, usize)) -> (usize, usize) {
 }
 
 fn calc_delt(
-    graph: &Vec<Vec<usize>>,
-    old_p: &Vec<i32>,
+    graph: &[Vec<usize>],
+    old_p: &[i32],
     old: &i32,
     change: (usize, i32),
     old_v: i32,
 ) -> i32 {
     let mut tot_neb = 0;
-    for i in graph[change.0].iter() {
-        tot_neb += old_p[i + 0];
+    for i in &graph[change.0] {
+        tot_neb += old_p[*i];
     }
-    return (((change.1 - old_v) * tot_neb)) % 3 + old;
+    ((change.1 - old_v) * tot_neb) % 3 + old
 }
 
-fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
+fn calc(lines: &mut Vec<(usize, usize)>, points: &[(f64, f64)]) -> [i32; 3] {
     lines.sort();
     lines.dedup_by(|x, y| x.0 == x.1 || x == y);
 
@@ -56,23 +56,21 @@ fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
 
                     d[i] = false;
                 } else {
-                    old_v = c[i] + 0;
+                    old_v = c[i];
                     change = (i, c[i] + 1);
-                    c[i] = c[i] + 1;
+                    c[i] += 1;
 
                     break;
                 }
+            } else if c[i] == 0 {
+                add_next = 1;
+                d[i] = true;
             } else {
-                if c[i] == 0 {
-                    add_next = 1;
-                    d[i] = true;
-                } else {
-                    old_v = c[i] + 0;
-                    change = (i, c[i] - 1);
-                    c[i] = c[i] - 1;
+                old_v = c[i];
+                change = (i, c[i] - 1);
+                c[i] -= 1;
 
-                    break;
-                }
+                break;
             }
         }
 
@@ -85,8 +83,8 @@ fn calc(lines: &mut Vec<(usize, usize)>, points: &Vec<(f64, f64)>) -> [i32; 3] {
         total[sum as usize] += 1;
     }
 
-    let min = total.iter().min().unwrap().clone();
-    for x in total.iter_mut() {
+    let min = *total.iter().min().unwrap();
+    for x in &mut total {
         *x -= min
     }
     total
@@ -131,22 +129,20 @@ fn main() {
                             total = calc(&mut edges, &points);
                             click = Some(p);
                         }
-                    } else {
-                        if mode > 1 {
-                            points.remove(p);
-                            edges.retain(|z| z.0 != p && z.1 != p);
-                            for z in edges.iter_mut() {
-                                if z.0 >= p {
-                                    z.0 = z.0 - 1;
-                                }
-                                if z.1 >= p {
-                                    z.1 = z.1 - 1;
-                                }
+                    } else if mode > 1 {
+                        points.remove(p);
+                        edges.retain(|z| z.0 != p && z.1 != p);
+                        for z in &mut edges {
+                            if z.0 >= p {
+                                z.0 -= 1;
                             }
-                            total = calc(&mut edges, &points);
-                        } else {
-                            click = Some(p);
+                            if z.1 >= p {
+                                z.1 -= 1;
+                            }
                         }
+                        total = calc(&mut edges, &points);
+                    } else {
+                        click = Some(p);
                     }
                 } else {
                     if mode < 2 {
@@ -215,7 +211,7 @@ fn main() {
                 }
             }
 
-            for &(x, y) in edges.iter() {
+            for &(x, y) in &edges {
                 line(
                     [1.0; 4],
                     1.0,
